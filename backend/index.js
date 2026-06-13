@@ -1,12 +1,20 @@
-require("dotenv").config();
+const dotenv = require("dotenv");
 const config = require("./config.json");
 const bcrypt = require("bcrypt");
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
+dotenv.config();
 
-mongoose.connect(config.connectionString);
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+  });
 
 const app = express();
 
