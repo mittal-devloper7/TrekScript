@@ -6,6 +6,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 dotenv.config();
 const User = require("./models/user_model");
+const { authenticateToken } = require("./utilities");
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -86,6 +87,20 @@ app.post("/login", async (req, res) => {
     message: "Login successful",
     user: { username: user.username, email: user.email },
     accessToken,
+  });
+});
+
+//get user
+app.get("/get-user", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+
+  const isUser = await User.findOne({ _id: userId });
+  if (!isUser) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  return res.json({
+    error: false,
+    user: { username: isUser.username, email: isUser.email },
   });
 });
 
