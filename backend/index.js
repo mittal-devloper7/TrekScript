@@ -21,6 +21,7 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: "*" }));
 
+//Account Creation
 app.post("/create-account", async (req, res) => {
   const { username, email, password } = req.body;
 
@@ -28,7 +29,7 @@ app.post("/create-account", async (req, res) => {
     return res.status(400).json({ message: "All Fields are Required" });
   }
 
-  const isUser = await User.findOne({ email });
+  const isUser = await User.findOne({ $or: [{ username }, { email }] });
   if (isUser) {
     return res.status(400).json({ message: "User already exists" });
   }
@@ -53,6 +54,38 @@ app.post("/create-account", async (req, res) => {
     user: { username: newUser.username, email: newUser.email },
     accessToken,
     message: "Registration successful",
+  });
+});
+
+//login
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "All Fields are Required" });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(400).json({ message: "User Not Found" });
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(400).json({ message: "Invalid Password" });
+  }
+
+  const accessToken = jwt.sign(
+    { userId: user._id },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: "3h" },
+  );
+
+  return res.status(200).json({
+    error: false,
+    message: "Login successful",
+    user: { username: user.username, email: user.email },
+    accessToken,
   });
 });
 
