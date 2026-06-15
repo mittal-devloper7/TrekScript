@@ -166,16 +166,49 @@ app.post("/image-upload", upload.single("image"), async (req, res) => {
       return res.status(400).json({ error: true, message: "No file uploaded" });
     }
 
-    const imageUrl = `http://localhost:5000/${req.file.filename}`; // Get the path of the uploaded file
+    const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`; // Get the path of the uploaded file
     res.status(201).json({ imageUrl });
   } catch (error) {
     res.status(500).json({ error: true, message: error.message });
   }
 });
 
+//delete an image from uploads folder
+app.delete("/delete-image", async (req, res) => {
+  const { imageUrl } = req.query;
+
+  if (!imageUrl) {
+    return res
+      .status(400)
+      .json({ error: true, message: "Image URL is required" });
+  }
+
+  try {
+    // Extract the filename from the imageUrl
+    const filename = path.basename(imageUrl);
+
+    //define the file path
+    const filePath = path.join(__dirname, "uploads", filename);
+
+    // Check if the file exists
+    if (fs.existsSync(filePath)) {
+      // Delete the file
+      fs.unlinkSync(filePath);
+      res
+        .status(200)
+        .json({ error: false, message: "Image deleted successfully" });
+    } else {
+      res.status(404).json({ error: true, message: "Image not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({ error: true, message: error.message });
+  }
+});
+
 //Serve uploaded images statically and handle file not found errors
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/assests", express.static(path.join(__dirname, "assets")));
+app.use("/assets", express.static(path.join(__dirname, "assets")));
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
