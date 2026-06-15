@@ -141,6 +141,21 @@ app.post("/add-trekscript", authenticateToken, async (req, res) => {
   }
 });
 
+//Get All TrekScript
+app.post("/get-all-scripts", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+
+  try {
+    const travelScripts = await TrekScript.find({ userId: userId }).sort({
+      isFavourite: -1,
+    });
+    res.status(200).json({ stories: travelScripts });
+  } catch (error) {
+    console.error("Error fetching trek scripts:", error);
+    res.status(500).json({ error: true, message: error.message });
+  }
+});
+
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });
