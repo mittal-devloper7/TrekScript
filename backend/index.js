@@ -6,6 +6,7 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 dotenv.config();
 const User = require("./models/user_model");
+const TrekScript = require("./models/trekScript_model");
 const { authenticateToken } = require("./utilities");
 
 mongoose
@@ -102,6 +103,42 @@ app.get("/get-user", authenticateToken, async (req, res) => {
     error: false,
     user: { username: isUser.username, email: isUser.email },
   });
+});
+
+//Add TrekScript
+app.post("/add-trekscript", authenticateToken, async (req, res) => {
+  const { title, story, visitedLocations, imageUrl, visitedDate } = req.body;
+  const { userId } = req.user;
+
+  //validate required fields
+  if (!title || !story || !visitedLocations || !imageUrl || !visitedDate) {
+    return res
+      .status(400)
+      .json({ error: true, message: "All fields are required" });
+  }
+
+  //converted visitedDate from milliseconds to Date object
+  const parsedVisitedDate = new Date(parseInt(visitedDate));
+
+  try {
+    const trekScript = new TrekScript({
+      title,
+      story,
+      visitedLocations,
+      userId,
+      imageUrl,
+      visitedDate: parsedVisitedDate,
+    });
+    await trekScript.save();
+    return res.status(201).json({
+      error: false,
+      trekScript,
+      message: "Trek script added successfully",
+    });
+  } catch (error) {
+    console.error("Error adding trek script:", error);
+    return res.status(400).json({ error: true, message: error.message });
+  }
 });
 
 app.listen(5000, () => {
