@@ -8,6 +8,9 @@ dotenv.config();
 const User = require("./models/user_model");
 const TrekScript = require("./models/trekScript_model");
 const { authenticateToken } = require("./utilities");
+const upload = require("./multer");
+const fs = require("fs");
+const path = require("path");
 
 mongoose
   .connect(process.env.MONGODB_URI)
@@ -155,6 +158,24 @@ app.post("/get-all-scripts", authenticateToken, async (req, res) => {
     res.status(500).json({ error: true, message: error.message });
   }
 });
+
+//route to hanndle image upload
+app.post("/image-upload", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: true, message: "No file uploaded" });
+    }
+
+    const imageUrl = `http://localhost:5000/${req.file.filename}`; // Get the path of the uploaded file
+    res.status(201).json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ error: true, message: error.message });
+  }
+});
+
+//Serve uploaded images statically and handle file not found errors
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/assests", express.static(path.join(__dirname, "assets")));
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
