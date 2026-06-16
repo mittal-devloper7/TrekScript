@@ -318,6 +318,32 @@ app.put("/update-is-favourite/:id", authenticateToken, async (req, res) => {
   }
 });
 
+//Search Trek Scripts by title or visited locations
+app.post("/search", authenticateToken, async (req, res) => {
+  const { query } = req.query;
+  const { userId } = req.user;
+
+  if (!query) {
+    return res
+      .status(404)
+      .json({ error: true, message: "Search query is required" });
+  }
+  try {
+    const searchResults = await TrekScript.find({
+      userId: userId,
+      $or: [
+        { title: { $regex: query, $options: "i" } },
+        { story: { $regex: query, $options: "i" } },
+        { visitedLocations: { $regex: query, $options: "i" } },
+      ],
+    }).sort({ isFavourite: -1 });
+
+    res.status(200).json({ stories: searchResults });
+  } catch (error) {
+    return res.status(500).json({ error: true, message: error.message });
+  }
+});
+
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });
