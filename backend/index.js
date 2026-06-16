@@ -319,7 +319,7 @@ app.put("/update-is-favourite/:id", authenticateToken, async (req, res) => {
 });
 
 //Search Trek Scripts by title or visited locations
-app.post("/search", authenticateToken, async (req, res) => {
+app.get("/search", authenticateToken, async (req, res) => {
   const { query } = req.query;
   const { userId } = req.user;
 
@@ -339,6 +339,27 @@ app.post("/search", authenticateToken, async (req, res) => {
     }).sort({ isFavourite: -1 });
 
     res.status(200).json({ stories: searchResults });
+  } catch (error) {
+    return res.status(500).json({ error: true, message: error.message });
+  }
+});
+
+//Filter travel stories by date range
+app.get("/trek-scripts/filters", authenticateToken, async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const { userId } = req.user;
+
+  try {
+    //Convert Start date and EndDate  from miiliseconds to Date Objects
+    const start = new Date(parseInt(startDate));
+    const end = new Date(parseInt(endDate));
+
+    //Find trek scripts that fall within the specified date range
+    const filteredScripts = await TrekScript.find({
+      userId: userId,
+      visitedDate: { $gte: start, $lte: end },
+    }).sort({ isFavourite: -1 });
+    res.status(200).json({ stories: filteredScripts });
   } catch (error) {
     return res.status(500).json({ error: true, message: error.message });
   }
