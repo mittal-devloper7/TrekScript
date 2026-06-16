@@ -252,6 +252,46 @@ app.put("/edit-trekscript/:id", authenticateToken, async (req, res) => {
   }
 });
 
+//Delete a Trek Script
+app.delete("/delete-trekscript/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.user;
+
+  try {
+    //Find the trek script by id and userId to ensure that users can only delete their own scripts
+    const trekScript = await TrekScript.findOne({ _id: id, userId: userId });
+
+    if (!trekScript) {
+      return res
+        .status(404)
+        .json({ error: true, message: "Trek script not found" });
+    }
+
+    //Delete the trek script
+    await trekScript.deleteOne({ _id: id, userId: userId });
+
+    //Extract the filename from the imageUrl
+    const imageUrl = trekScript.imageUrl;
+    const filename = path.basename(imageUrl);
+
+    //Define the file path
+    const filePath = path.join(__dirname, "uploads", filename);
+
+    //delete  the file from uploads folder if it exists and is not the placeholder image
+    fs.unlinkSync(filePath, (err) => {
+      if (err) {
+        console.error("Error deleting image:", err);
+        //Optionally, you could still respond with success even if the image deletion fails, since the trek script has already been deleted from the database
+      }
+    });
+    return res
+      .status(200)
+      .json({ error: false, message: "Trek script deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: true, message: error.message });
+  }
+});
+
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });
