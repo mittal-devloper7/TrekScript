@@ -108,57 +108,6 @@ app.get("/get-user", authenticateToken, async (req, res) => {
   });
 });
 
-//Add TrekScript
-app.post("/add-trekscript", authenticateToken, async (req, res) => {
-  const { title, story, visitedLocations, imageUrl, visitedDate } = req.body;
-  const { userId } = req.user;
-
-  //validate required fields
-  if (!title || !story || !visitedLocations || !imageUrl || !visitedDate) {
-    return res
-      .status(400)
-      .json({ error: true, message: "All fields are required" });
-  }
-
-  //converted visitedDate from milliseconds to Date object
-  const parsedVisitedDate = new Date(parseInt(visitedDate));
-
-  try {
-    const trekScript = new TrekScript({
-      title,
-      story,
-      visitedLocations,
-      userId,
-      imageUrl,
-      visitedDate: parsedVisitedDate,
-    });
-    await trekScript.save();
-    return res.status(201).json({
-      error: false,
-      trekScript,
-      message: "Trek script added successfully",
-    });
-  } catch (error) {
-    console.error("Error adding trek script:", error);
-    return res.status(400).json({ error: true, message: error.message });
-  }
-});
-
-//Get All TrekScript
-app.post("/get-all-scripts", authenticateToken, async (req, res) => {
-  const { userId } = req.user;
-
-  try {
-    const travelScripts = await TrekScript.find({ userId: userId }).sort({
-      isFavourite: -1,
-    });
-    res.status(200).json({ stories: travelScripts });
-  } catch (error) {
-    console.error("Error fetching trek scripts:", error);
-    res.status(500).json({ error: true, message: error.message });
-  }
-});
-
 //route to hanndle image upload
 app.post("/image-upload", upload.single("image"), async (req, res) => {
   try {
@@ -209,6 +158,99 @@ app.delete("/delete-image", async (req, res) => {
 //Serve uploaded images statically and handle file not found errors
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/assets", express.static(path.join(__dirname, "assets")));
+
+//Add TrekScript
+app.post("/add-trekscript", authenticateToken, async (req, res) => {
+  const { title, story, visitedLocations, imageUrl, visitedDate } = req.body;
+  const { userId } = req.user;
+
+  //validate required fields
+  if (!title || !story || !visitedLocations || !imageUrl || !visitedDate) {
+    return res
+      .status(400)
+      .json({ error: true, message: "All fields are required" });
+  }
+
+  //converted visitedDate from milliseconds to Date object
+  const parsedVisitedDate = new Date(parseInt(visitedDate));
+
+  try {
+    const trekScript = new TrekScript({
+      title,
+      story,
+      visitedLocations,
+      userId,
+      imageUrl,
+      visitedDate: parsedVisitedDate,
+    });
+    await trekScript.save();
+    return res.status(201).json({
+      error: false,
+      trekScript,
+      message: "Trek script added successfully",
+    });
+  } catch (error) {
+    console.error("Error adding trek script:", error);
+    return res.status(400).json({ error: true, message: error.message });
+  }
+});
+
+//Get All TrekScript
+app.get("/get-all-scripts", authenticateToken, async (req, res) => {
+  const { userId } = req.user;
+
+  try {
+    const travelScripts = await TrekScript.find({ userId: userId }).sort({
+      isFavourite: -1,
+    });
+    res.status(200).json({ stories: travelScripts });
+  } catch (error) {
+    console.error("Error fetching trek scripts:", error);
+    res.status(500).json({ error: true, message: error.message });
+  }
+});
+
+//Edit Trek Script
+app.put("/edit-trekscript/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { title, story, visitedLocations, imageUrl, visitedDate } = req.body;
+  const { userId } = req.user;
+
+  //validate required fields
+  if (!title || !story || !visitedLocations || !imageUrl || !visitedDate) {
+    return res
+      .status(400)
+      .json({ error: true, message: "All fields are required" });
+  }
+
+  //converted visitedDate from milliseconds to Date object
+  const parsedVisitedDate = new Date(parseInt(visitedDate));
+
+  try {
+    //find the trek script by id and userId
+    const trekScript = await TrekScript.findOne({ _id: id, userId: userId });
+
+    if (!trekScript) {
+      return res
+        .status(404)
+        .json({ error: true, message: "Trek script not found" });
+    }
+
+    const placeholderImageUrl = `http://localhost:5000/assets/placeholder.jpg`;
+
+    trekScript.title = title;
+    trekScript.story = story;
+    trekScript.visitedLocations = visitedLocations;
+    trekScript.visitedDate = parsedVisitedDate;
+    trekScript.imageUrl = imageUrl || placeholderImageUrl;
+    await trekScript.save();
+    return res
+      .status(200)
+      .json({ story: trekScript, message: "Trek script updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: true, message: error.message });
+  }
+});
 
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
