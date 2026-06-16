@@ -292,6 +292,32 @@ app.delete("/delete-trekscript/:id", authenticateToken, async (req, res) => {
   }
 });
 
+//Update isFavourite
+app.put("/update-is-favourite/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { isFavourite } = req.body;
+  const { userId } = req.user;
+
+  try {
+    const trekScript = await TrekScript.findOne({ _id: id, userId: userId });
+
+    if (!trekScript) {
+      return res
+        .status(404)
+        .json({ error: true, message: "Trek script not found" });
+    }
+
+    trekScript.isFavourite = isFavourite;
+    await trekScript.save();
+
+    res
+      .status(200)
+      .json({ story: trekScript, message: "Trek script updated successfully" });
+  } catch (error) {
+    return res.status(500).json({ error: true, message: error.message });
+  }
+});
+
 app.listen(5000, () => {
   console.log("Server is running on port 5000");
 });
